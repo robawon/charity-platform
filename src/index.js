@@ -1,52 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <meta name="theme-color" content="#2563eb" />
-    <meta name="description" content="CharityLot - Support Our Cause. Buy raffle tickets and make a difference." />
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import { supabase } from './lib/supabase';
 
-    <!-- PWA Meta Tags -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="CharityLot" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="application-name" content="CharityLot" />
+const SESSION_KEY = 'app_session_active';
 
-    <!-- Icons -->
-    <link rel="icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
-    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
+const bootApp = async () => {
+  try {
+    const isActive = sessionStorage.getItem(SESSION_KEY);
+    if (!isActive) {
+      await supabase.auth.signOut();
+      sessionStorage.setItem(SESSION_KEY, 'true');
+    }
+  } catch (err) {
+    console.log('Session cleanup error:', err);
+  }
 
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json" />
+  const rootElement = document.getElementById('root');
+  if (!rootElement) {
+    console.error('Root element not found');
+    return;
+  }
 
-    <title>CharityLot</title>
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+};
 
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body {
-        -webkit-font-smoothing: antialiased;
-        -webkit-tap-highlight-color: transparent;
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: env(safe-area-inset-bottom);
-        padding-left: env(safe-area-inset-left);
-        padding-right: env(safe-area-inset-right);
-      }
-      @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js')
-            .then(function(reg) { console.log('SW registered'); })
-            .catch(function(err) { console.log('SW failed: ', err); });
-        });
-      }
-    </script>
-  </body>
-</html>
+bootApp();
