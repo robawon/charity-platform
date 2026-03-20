@@ -1,36 +1,40 @@
-{
-  "short_name": "CharityLot",
-  "name": "CharityLot - Charity Ticket Platform",
-  "description": "Buy raffle tickets and support charity causes",
-  "icons": [
-    {
-      "src": "favicon.ico",
-      "sizes": "32x32",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "apple-touch-icon.png",
-      "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "start_url": "/",
-  "display": "standalone",
-  "orientation": "portrait",
-  "theme_color": "#2563eb",
-  "background_color": "#ffffff",
-  "scope": "/"
-}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="CharityLot - Support Our Cause. Buy raffle tickets and make a difference." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="CharityLot" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="CharityLot" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>CharityLot</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        -webkit-font-smoothing: antialiased;
+        -webkit-tap-highlight-color: transparent;
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(reg) { console.log('SW registered'); })
+            .catch(function(err) { console.log('SW failed: ', err); });
+        });
+      }
+    </script>
+  </body>
+</html>
