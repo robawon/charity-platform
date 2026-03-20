@@ -21,23 +21,25 @@ export const AuthProvider = ({ children }) => {
         .select('*')
         .eq('id', userId)
         .single();
-      if (error) throw error;
+      if (error) { setProfile(null); return null; }
       setProfile(data);
+      return data;
     } catch (err) {
-      console.error('Error fetching profile:', err);
       setProfile(null);
+      return null;
     }
   };
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      setLoading(false);
+      if (session?.user) {
+        fetchProfile(session.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -53,26 +55,53 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) throw new Error(error.message);
+
+    // Check if seller is suspended
+    if (data.user) {
+      const { data: profileData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileData?.role === 'seller' && profileData?.status === 'suspended') {
+        await supabase.auth.signOut();
+        throw new Error('Your account is suspended. Please contact the administrator to activate your account.');
+      }
+    }
     return data;
   };
 
   const signUp = async (email, password, name, role = 'seller') => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    if (error) throw new Error(error.message);
+    if (!data.user) throw new Error('Account created but email confirmation may be required.');
 
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert([{ id: data.user.id, name, email, role }]);
-      if (profileError) throw profileError;
+    // New sellers are suspended by default
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert([{
+        id: data.user.id,
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        role: 'seller',
+        status: 'suspended', // Always suspended until admin activates
+      }]);
+
+    if (profileError && !profileError.message.includes('duplicate')) {
+      throw new Error('Profile creation failed: ' + profileError.message);
     }
     return data;
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    await supabase.auth.signOut();
+    setUser(null);
     setProfile(null);
   };
 
@@ -85,6 +114,8 @@ export const AuthProvider = ({ children }) => {
     signOut,
     isAdmin: profile?.role === 'admin',
     isSeller: profile?.role === 'seller',
+    isActive: profile?.status === 'active',
+    isSuspended: profile?.status === 'suspended',
     refreshProfile: () => user && fetchProfile(user.id),
   };
 
