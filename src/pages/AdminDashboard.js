@@ -103,16 +103,30 @@ const AdminDashboard = () => {
     fetchData();
   };
 
-  const handlePickWinner = async (eventId) => {
-    const approved = submissions.filter(s => s.event_id === eventId && s.payment_status === 'approved');
-    if (approved.length === 0) { alert('No approved submissions for this event!'); return; }
-    const existing = winners.find(w => w.event_id === eventId);
-    if (existing && !window.confirm('A winner already exists. Pick a new one?')) return;
-    if (existing) await supabase.from('winners').delete().eq('event_id', eventId);
-    const winner = approved[Math.floor(Math.random() * approved.length)];
-    await supabase.from('winners').insert([{ event_id: eventId, submission_id: winner.id }]);
-    fetchData(); setActiveTab('winners');
-  };
+ const handlePickWinner = async (eventId) => {
+  // Check if winner already exists — if so, block re-picking
+  const existing = winners.find(w => w.event_id === eventId);
+  if (existing) {
+    alert('⚠️ A winner has already been selected for this event and cannot be changed.');
+    return;
+  }
+
+  // Check if there are approved submissions
+  const approved = submissions.filter(s => s.event_id === eventId && s.payment_status === 'approved');
+  if (approved.length === 0) {
+    alert('No approved submissions for this event!');
+    return;
+  }
+
+  // Confirm before picking
+  if (!window.confirm(`Pick a winner from ${approved.length} approved submission(s)? This cannot be undone.`)) return;
+
+  // Randomly select winner
+  const winner = approved[Math.floor(Math.random() * approved.length)];
+  await supabase.from('winners').insert([{ event_id: eventId, submission_id: winner.id }]);
+  fetchData();
+  setActiveTab('winners');
+};
 
   const resetEventForm = () => setEventForm({
     title: '', description: '', ticket_price: '', deadline: '',
@@ -371,14 +385,19 @@ const AdminDashboard = () => {
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          {isPast && approved > 0 && (
-                            <button onClick={() => handlePickWinner(event.id)} className="action-btn" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>
-                              <Shuffle size={14} /> {hasWinner ? 'Re-pick' : 'Pick Winner'}
-                            </button>
-                          )}
-                          <button onClick={() => openEditEvent(event)} className="action-btn" style={{ padding: '8px 12px', background: '#f8faff', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#475569' }}><Edit2 size={15} /></button>
-                          <button onClick={() => handleDeleteEvent(event.id)} className="action-btn" style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', cursor: 'pointer', color: '#dc2626' }}><Trash2 size={15} /></button>
-                        </div>
+  {approved > 0 && !hasWinner && (
+    <button onClick={() => handlePickWinner(event.id)} className="action-btn" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>
+      <Shuffle size={14} /> Pick Winner
+    </button>
+  )}
+  {hasWinner && (
+    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: '#fef9c3', color: '#b45309', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, border: '1px solid #fde68a' }}>
+      🏆 Winner Picked
+    </span>
+  )}
+  <button onClick={() => openEditEvent(event)} className="action-btn" style={{ padding: '8px 12px', background: '#f8faff', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#475569' }}><Edit2 size={15} /></button>
+  <button onClick={() => handleDeleteEvent(event.id)} className="action-btn" style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', cursor: 'pointer', color: '#dc2626' }}><Trash2 size={15} /></button>
+</div>
                       </div>
                     </div>
                   );
