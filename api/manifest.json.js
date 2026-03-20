@@ -1,5 +1,7 @@
-module.exports = (req, res) => {
-  const manifest = {
+export default function handler(req, res) {
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.status(200).json({
     short_name: "CharityLot",
     name: "CharityLot - Charity Ticket Platform",
     description: "Buy raffle tickets and support charity causes",
@@ -37,9 +39,5 @@ module.exports = (req, res) => {
     scope: "https://charity-platform-blue.vercel.app/",
     lang: "en",
     id: "com.charitylot.app"
-  };
-
-  res.setHeader('Content-Type', 'application/manifest+json');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.status(200).json(manifest);
-};
+  });
+}
