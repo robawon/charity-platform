@@ -1,16 +1,49 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
   "routes": [
     {
-      "src": "^/static/(.*)",
+      "src": "/manifest.json",
+      "dest": "/manifest.json",
+      "headers": {
+        "content-type": "application/manifest+json",
+        "cache-control": "public, max-age=0, must-revalidate"
+      }
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/sw.js",
+      "headers": {
+        "content-type": "application/javascript",
+        "cache-control": "public, max-age=0, must-revalidate"
+      }
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
+      "src": "/icon-(.*)\\.png",
+      "dest": "/icon-$1.png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "dest": "/apple-touch-icon.png"
+    },
+    {
+      "src": "/static/(.*)",
       "dest": "/static/$1"
     },
     {
-      "src": "^/(.*\\.(json|js|ico|png|jpg|svg|txt|css|woff|woff2|ttf|eot))",
-      "dest": "/$1"
-    },
-    {
-      "src": "^/(.*)$",
+      "src": "/(.*)",
       "dest": "/index.html"
     }
   ]
