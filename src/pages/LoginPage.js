@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { Heart, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const LoginPage = () => {
-  const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
-  const [formData, setFormData] = useState({ email: '', password: '', name: '', role: 'seller' });
+  const [mode, setMode] = useState('signin');
+  const [formData, setFormData] = useState({ email: '', password: '', name: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -19,11 +20,10 @@ const LoginPage = () => {
     try {
       if (mode === 'signin') {
         await signIn(formData.email, formData.password);
-        // Navigation handled by AuthContext listener + useEffect below
       } else {
-        await signUp(formData.email, formData.password, formData.name, formData.role);
+        // Always create as seller — only one admin allowed (set manually in Supabase)
+        await signUp(formData.email, formData.password, formData.name, 'seller');
         setMode('signin');
-        setError('');
         alert('Account created! Please sign in.');
       }
     } catch (err) {
@@ -33,7 +33,6 @@ const LoginPage = () => {
     }
   };
 
-  // Redirect after login
   React.useEffect(() => {
     if (profile) {
       navigate(profile.role === 'admin' ? '/admin' : '/seller');
@@ -47,6 +46,7 @@ const LoginPage = () => {
     background: '#fafafa', outline: 'none',
     transition: 'border-color 0.2s',
     boxSizing: 'border-box',
+    fontFamily: "'DM Sans', sans-serif",
   };
 
   return (
@@ -110,9 +110,21 @@ const LoginPage = () => {
           </div>
 
           <div style={{ padding: '32px' }}>
-            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '1.6rem', color: '#0f2d5e', marginBottom: '24px', fontWeight: 700 }}>
-              {mode === 'signin' ? 'Welcome back 👋' : 'Join our team 🌟'}
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '1.6rem', color: '#0f2d5e', marginBottom: '8px', fontWeight: 700 }}>
+              {mode === 'signin' ? 'Welcome back 👋' : 'Join as Seller 🌟'}
             </h2>
+
+            {/* Admin note */}
+            {mode === 'signup' && (
+              <div style={{
+                background: '#eff6ff', border: '1px solid #bfdbfe',
+                borderRadius: '10px', padding: '10px 14px', marginBottom: '20px',
+                color: '#1e40af', fontSize: '0.8rem', display: 'flex', gap: '8px', alignItems: 'flex-start',
+              }}>
+                <AlertCircle size={14} style={{ marginTop: '1px', flexShrink: 0 }} />
+                New accounts are created as <strong>Sellers</strong> only. Admin access is managed by the system administrator.
+              </div>
+            )}
 
             {error && (
               <div style={{
@@ -155,7 +167,7 @@ const LoginPage = () => {
                 />
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
                   Password
                 </label>
@@ -176,21 +188,6 @@ const LoginPage = () => {
                 </div>
               </div>
 
-              {mode === 'signup' && (
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                    Role
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={e => setFormData({ ...formData, role: e.target.value })}
-                    style={{ ...inputStyle, appearance: 'none' }}>
-                    <option value="seller">Seller</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-              )}
-
               <button type="submit" disabled={loading} style={{
                 width: '100%', padding: '14px',
                 background: loading ? '#94a3b8' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
@@ -200,7 +197,7 @@ const LoginPage = () => {
                 boxShadow: loading ? 'none' : '0 6px 20px rgba(37,99,235,0.3)',
                 transition: 'all 0.2s',
               }}>
-                {loading ? 'Please wait...' : (mode === 'signin' ? 'Sign In →' : 'Create Account →')}
+                {loading ? 'Please wait...' : (mode === 'signin' ? 'Sign In →' : 'Create Seller Account →')}
               </button>
             </form>
 
