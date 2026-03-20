@@ -12,7 +12,8 @@
     <meta name="application-name" content="CharityLot" />
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.json" />
+    <!-- Point manifest to API route -->
+    <link rel="manifest" href="/api/manifest.json" />
     <title>CharityLot</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -21,6 +22,8 @@
         -webkit-tap-highlight-color: transparent;
         padding-top: env(safe-area-inset-top);
         padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
       }
       @keyframes spin { to { transform: rotate(360deg); } }
     </style>
