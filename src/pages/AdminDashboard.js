@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import {
-  LayoutDashboard, Calendar, Users, DollarSign, Trophy,
+  LayoutDashboard, Calendar, Users, Trophy,
   Plus, Edit2, Trash2, Save, Shuffle, X,
   CheckCircle, XCircle, Clock, UserCheck, UserX, Shield
 } from 'lucide-react';
@@ -20,6 +20,7 @@ const AdminDashboard = () => {
   const [selectedEvent, setSelectedEvent] = useState('all');
   const [selectedSeller, setSelectedSeller] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+
   const [eventForm, setEventForm] = useState({
     title: '', description: '', ticket_price: '', deadline: '',
     fields: [{ label: 'Full Name', field_type: 'text', is_required: true }]
@@ -61,12 +62,11 @@ const AdminDashboard = () => {
     return true;
   });
 
-  // Toggle seller status
-  const handleToggleSellerStatus = async (sellerId, currentStatus) => {
-    const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+  const handleToggleSellerStatus = async (seller) => {
+    const newStatus = seller.status === 'active' ? 'suspended' : 'active';
     const action = newStatus === 'active' ? 'activate' : 'suspend';
-    if (!window.confirm(`Are you sure you want to ${action} this seller?`)) return;
-    await supabase.from('users').update({ status: newStatus }).eq('id', sellerId);
+    if (!window.confirm(`Are you sure you want to ${action} ${seller.name}?`)) return;
+    await supabase.from('users').update({ status: newStatus }).eq('id', seller.id);
     fetchData();
   };
 
@@ -111,7 +111,7 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm('Delete this event?')) return;
+    if (!window.confirm('Delete this event? This will also delete all submissions.')) return;
     await supabase.from('events').delete().eq('id', eventId);
     fetchData();
   };
@@ -162,26 +162,11 @@ const AdminDashboard = () => {
     );
   };
 
-  const sellerStatusBadge = (status) => {
-    const isActive = status === 'active';
-    return (
-      <span style={{
-        background: isActive ? '#f0fdf4' : '#fef2f2',
-        color: isActive ? '#15803d' : '#dc2626',
-        padding: '4px 10px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 600,
-        display: 'inline-flex', alignItems: 'center', gap: '4px',
-      }}>
-        {isActive ? <UserCheck size={12} /> : <UserX size={12} />}
-        {isActive ? 'Active' : 'Suspended'}
-      </span>
-    );
-  };
-
   const sidebarItems = [
     { id: 'overview', icon: <LayoutDashboard size={18} />, label: 'Overview' },
     { id: 'events', icon: <Calendar size={18} />, label: 'Events' },
-    { id: 'sellers', icon: <Users size={18} />, label: 'Sellers', badge: sellers.filter(s => s.status === 'suspended').length },
-    { id: 'submissions', icon: <Users size={18} />, label: 'Submissions' },
+    { id: 'sellers', icon: <Users size={18} />, label: 'Sellers' },
+    { id: 'submissions', icon: <Shield size={18} />, label: 'Submissions' },
     { id: 'winners', icon: <Trophy size={18} />, label: 'Winners' },
   ];
 
@@ -193,6 +178,7 @@ const AdminDashboard = () => {
         .sidebar-item.active { background: linear-gradient(135deg, #eff6ff, #dbeafe) !important; color: #2563eb !important; }
         .action-btn:hover { opacity: 0.85; transform: translateY(-1px); }
         .action-btn { transition: all 0.2s; }
+        tr:hover td { background: #f8faff !important; }
       `}</style>
 
       {/* SIDEBAR */}
@@ -206,41 +192,21 @@ const AdminDashboard = () => {
           {sidebarItems.map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               className={`sidebar-item ${activeTab === item.id ? 'active' : ''}`}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                width: '100%', padding: '11px 16px', borderRadius: '10px',
-                border: 'none', background: 'transparent', cursor: 'pointer',
-                fontFamily: "'DM Sans', sans-serif",
-                fontWeight: activeTab === item.id ? 600 : 500,
-                fontSize: '0.9rem',
-                color: activeTab === item.id ? '#2563eb' : '#64748b',
-                marginBottom: '4px', textAlign: 'left',
-              }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                {item.icon} {item.label}
-              </span>
-              {item.badge > 0 && (
-                <span style={{ background: '#ef4444', color: 'white', borderRadius: '50px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700 }}>
-                  {item.badge}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '11px 16px', borderRadius: '10px', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: activeTab === item.id ? 600 : 500, fontSize: '0.9rem', color: activeTab === item.id ? '#2563eb' : '#64748b', marginBottom: '4px', textAlign: 'left' }}>
+              {item.icon} {item.label}
+              {item.id === 'sellers' && sellers.filter(s => s.status === 'suspended').length > 0 && (
+                <span style={{ marginLeft: 'auto', background: '#fef2f2', color: '#dc2626', borderRadius: '50px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700 }}>
+                  {sellers.filter(s => s.status === 'suspended').length}
                 </span>
               )}
             </button>
           ))}
         </nav>
 
-        <div style={{ padding: '16px 20px', borderTop: '1px solid #f1f5f9' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Shield size={16} color="white" />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>{profile?.name}</div>
-              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Administrator</div>
-            </div>
-          </div>
-          <button onClick={signOut} style={{ width: '100%', padding: '8px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
-            Sign Out
-          </button>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
+          <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '4px', fontWeight: 600 }}>{profile?.name}</div>
+          <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '12px' }}>Administrator</div>
+          <button onClick={signOut} style={{ width: '100%', padding: '8px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>Sign Out</button>
         </div>
       </aside>
 
@@ -253,12 +219,13 @@ const AdminDashboard = () => {
             <div>
               <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '2rem', color: '#0f2d5e', marginBottom: '8px' }}>Dashboard Overview</h1>
               <p style={{ color: '#64748b', marginBottom: '32px' }}>Here's what's happening with your charity events.</p>
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '40px' }}>
                 {[
                   { icon: <Calendar size={24} />, label: 'Total Events', value: events.length, color: '#2563eb', bg: '#eff6ff' },
                   { icon: <Users size={24} />, label: 'Active Sellers', value: sellers.filter(s => s.status === 'active').length, color: '#7c3aed', bg: '#f5f3ff' },
                   { icon: <CheckCircle size={24} />, label: 'Approved Tickets', value: submissions.filter(s => s.payment_status === 'approved').length, color: '#15803d', bg: '#f0fdf4' },
-                  { icon: <DollarSign size={24} />, label: 'Total Revenue', value: `$${totalRevenue.toFixed(2)}`, color: '#b45309', bg: '#fffbeb' },
+                  { icon: <span style={{ fontSize: '1.2rem' }}>₮</span>, label: 'Total Revenue', value: `Birr ${totalRevenue.toFixed(2)}`, color: '#b45309', bg: '#fffbeb' },
                 ].map((stat, i) => (
                   <div key={i} style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: stat.bg, color: stat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>{stat.icon}</div>
@@ -268,18 +235,17 @@ const AdminDashboard = () => {
                 ))}
               </div>
 
-              {/* Pending sellers alert */}
               {sellers.filter(s => s.status === 'suspended').length > 0 && (
-                <div style={{ background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: '14px', padding: '20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '14px', padding: '20px 24px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <UserX size={24} color="#b45309" />
+                    <UserX size={24} color="#dc2626" />
                     <div>
-                      <div style={{ fontWeight: 700, color: '#b45309' }}>{sellers.filter(s => s.status === 'suspended').length} seller(s) waiting for activation</div>
-                      <div style={{ color: '#92400e', fontSize: '0.85rem' }}>New seller accounts are suspended by default</div>
+                      <div style={{ fontWeight: 700, color: '#dc2626', fontSize: '0.95rem' }}>{sellers.filter(s => s.status === 'suspended').length} seller(s) waiting for activation</div>
+                      <div style={{ color: '#ef4444', fontSize: '0.8rem' }}>New seller accounts are suspended by default</div>
                     </div>
                   </div>
-                  <button onClick={() => setActiveTab('sellers')} style={{ padding: '10px 20px', background: '#f59e0b', border: 'none', borderRadius: '10px', color: 'white', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                    Manage Sellers
+                  <button onClick={() => setActiveTab('sellers')} style={{ padding: '10px 20px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '0.875rem' }}>
+                    Manage Sellers →
                   </button>
                 </div>
               )}
@@ -290,69 +256,59 @@ const AdminDashboard = () => {
           {activeTab === 'sellers' && (
             <div>
               <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '2rem', color: '#0f2d5e', marginBottom: '8px' }}>Seller Management</h1>
-              <p style={{ color: '#64748b', marginBottom: '24px' }}>Activate or suspend seller accounts.</p>
+              <p style={{ color: '#64748b', marginBottom: '24px' }}>Activate or suspend seller accounts. New accounts start as suspended.</p>
+
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <UserCheck size={20} color="#15803d" />
+                  <div>
+                    <div style={{ fontFamily: "'Fraunces', serif", fontSize: '1.5rem', fontWeight: 700, color: '#15803d' }}>{sellers.filter(s => s.status === 'active').length}</div>
+                    <div style={{ color: '#16a34a', fontSize: '0.75rem', fontWeight: 600 }}>Active Sellers</div>
+                  </div>
+                </div>
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <UserX size={20} color="#dc2626" />
+                  <div>
+                    <div style={{ fontFamily: "'Fraunces', serif", fontSize: '1.5rem', fontWeight: 700, color: '#dc2626' }}>{sellers.filter(s => s.status === 'suspended').length}</div>
+                    <div style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: 600 }}>Suspended</div>
+                  </div>
+                </div>
+              </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {sellers.length === 0 ? (
+                {sellers.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>
-                    <Users size={48} style={{ margin: '0 auto 16px', opacity: 0.4 }} />
+                    <Users size={48} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
                     <p>No sellers registered yet.</p>
                   </div>
-                ) : (
-                  sellers.map(seller => {
-                    const sellerSubs = submissions.filter(s => s.seller_id === seller.id);
-                    const approved = sellerSubs.filter(s => s.payment_status === 'approved').length;
-                    return (
-                      <div key={seller.id} style={{
-                        background: 'white', borderRadius: '16px', padding: '20px 24px',
-                        boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
-                        border: `1px solid ${seller.status === 'suspended' ? '#fecaca' : '#bbf7d0'}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                          <div style={{
-                            width: '44px', height: '44px', borderRadius: '50%',
-                            background: seller.status === 'active' ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'linear-gradient(135deg, #94a3b8, #64748b)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'white', fontWeight: 700, fontSize: '1rem',
-                          }}>
-                            {seller.name[0].toUpperCase()}
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.95rem' }}>{seller.name}</div>
-                            <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{seller.email}</div>
-                            <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '2px' }}>
-                              Joined {new Date(seller.created_at).toLocaleDateString()} · {approved} approved tickets
-                            </div>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          {sellerStatusBadge(seller.status)}
-                          <button
-                            onClick={() => handleToggleSellerStatus(seller.id, seller.status)}
-                            className="action-btn"
-                            style={{
-                              padding: '10px 20px', border: 'none', borderRadius: '10px',
-                              fontFamily: "'DM Sans', sans-serif", fontWeight: 700,
-                              cursor: 'pointer', fontSize: '0.85rem',
-                              background: seller.status === 'suspended'
-                                ? 'linear-gradient(135deg, #22c55e, #16a34a)'
-                                : '#fef2f2',
-                              color: seller.status === 'suspended' ? 'white' : '#dc2626',
-                              boxShadow: seller.status === 'suspended' ? '0 4px 12px rgba(34,197,94,0.3)' : 'none',
-                              display: 'flex', alignItems: 'center', gap: '6px',
-                            }}>
-                            {seller.status === 'suspended'
-                              ? <><UserCheck size={15} /> Activate</>
-                              : <><UserX size={15} /> Suspend</>
-                            }
-                          </button>
+                )}
+                {sellers.map(seller => (
+                  <div key={seller.id} style={{ background: 'white', borderRadius: '16px', padding: '20px 24px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: `1px solid ${seller.status === 'active' ? '#bbf7d0' : '#fecaca'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: seller.status === 'active' ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'linear-gradient(135deg, #94a3b8, #64748b)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '1rem', flexShrink: 0 }}>
+                        {seller.name[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.95rem' }}>{seller.name}</div>
+                        <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{seller.email}</div>
+                        <div style={{ marginTop: '4px' }}>
+                          <span style={{ background: seller.status === 'active' ? '#f0fdf4' : '#fef2f2', color: seller.status === 'active' ? '#15803d' : '#dc2626', padding: '2px 10px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            {seller.status === 'active' ? <><CheckCircle size={10} /> Active</> : <><XCircle size={10} /> Suspended</>}
+                          </span>
                         </div>
                       </div>
-                    );
-                  })
-                )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <div style={{ textAlign: 'right', marginRight: '8px' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Tickets sold</div>
+                        <div style={{ fontWeight: 700, color: '#0f2d5e' }}>{submissions.filter(s => s.seller_id === seller.id && s.payment_status === 'approved').length}</div>
+                      </div>
+                      <button onClick={() => handleToggleSellerStatus(seller)} className="action-btn" style={{ padding: '10px 20px', background: seller.status === 'active' ? '#fef2f2' : 'linear-gradient(135deg, #22c55e, #16a34a)', color: seller.status === 'active' ? '#dc2626' : 'white', border: seller.status === 'active' ? '1px solid #fecaca' : 'none', borderRadius: '10px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {seller.status === 'active' ? <><UserX size={16} /> Suspend</> : <><UserCheck size={16} /> Activate</>}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -365,9 +321,7 @@ const AdminDashboard = () => {
                   <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '2rem', color: '#0f2d5e' }}>Events</h1>
                   <p style={{ color: '#64748b' }}>Manage your charity raffle events.</p>
                 </div>
-                <button onClick={() => { resetEventForm(); setEditingEvent(null); setShowEventModal(true); }}
-                  className="action-btn"
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(37,99,235,0.3)' }}>
+                <button onClick={() => { resetEventForm(); setEditingEvent(null); setShowEventModal(true); }} className="action-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(37,99,235,0.3)' }}>
                   <Plus size={18} /> New Event
                 </button>
               </div>
@@ -388,7 +342,7 @@ const AdminDashboard = () => {
                             {hasWinner && <span style={{ background: '#fef9c3', color: '#b45309', padding: '3px 10px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 600 }}>🏆 WINNER SELECTED</span>}
                           </div>
                           <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-                            <span style={{ color: '#64748b', fontSize: '0.85rem' }}>💰 ${Number(event.ticket_price).toFixed(2)}</span>
+                            <span style={{ color: '#64748b', fontSize: '0.85rem' }}>💰 Birr {Number(event.ticket_price).toFixed(2)} per ticket</span>
                             <span style={{ color: '#64748b', fontSize: '0.85rem' }}>📅 {new Date(event.deadline).toLocaleDateString()}</span>
                             <span style={{ color: '#64748b', fontSize: '0.85rem' }}>🎫 {eventSubs.length} submissions ({approved} approved)</span>
                           </div>
@@ -454,9 +408,7 @@ const AdminDashboard = () => {
                       ))}
                     </tbody>
                   </table>
-                  {filteredSubmissions.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '48px', color: '#94a3b8' }}>No submissions match your filters.</div>
-                  )}
+                  {filteredSubmissions.length === 0 && <div style={{ textAlign: 'center', padding: '48px', color: '#94a3b8' }}>No submissions match your filters.</div>}
                 </div>
               </div>
             </div>
@@ -476,9 +428,9 @@ const AdminDashboard = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {winners.map(winner => (
                     <div key={winner.id} style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', border: '2px solid #f59e0b', borderRadius: '20px', padding: '32px', display: 'flex', gap: '24px', alignItems: 'center' }}>
-                      <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', flexShrink: 0, boxShadow: '0 8px 20px rgba(245,158,11,0.3)' }}>🏆</div>
+                      <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', flexShrink: 0 }}>🏆</div>
                       <div>
-                        <div style={{ color: '#92400e', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{winner.events?.title}</div>
+                        <div style={{ color: '#92400e', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>{winner.events?.title}</div>
                         <div style={{ fontFamily: "'Fraunces', serif", fontSize: '1.8rem', fontWeight: 700, color: '#78350f' }}>{winner.submissions?.buyer_name}</div>
                         <div style={{ color: '#92400e', fontSize: '0.85rem', marginTop: '4px' }}>Selected on {new Date(winner.selected_at).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
                       </div>
@@ -502,7 +454,7 @@ const AdminDashboard = () => {
             {[
               { label: 'Event Title *', key: 'title', type: 'text', placeholder: 'e.g. Spring Charity Raffle 2025' },
               { label: 'Description', key: 'description', type: 'textarea', placeholder: 'Describe the event...' },
-              { label: 'Ticket Price ($) *', key: 'ticket_price', type: 'number', placeholder: '10.00' },
+              { label: 'Ticket Price (Birr) *', key: 'ticket_price', type: 'number', placeholder: '10.00' },
               { label: 'Deadline *', key: 'deadline', type: 'datetime-local', placeholder: '' },
             ].map(field => (
               <div key={field.key} style={{ marginBottom: '16px' }}>
@@ -535,7 +487,7 @@ const AdminDashboard = () => {
                 </div>
               ))}
             </div>
-            <button onClick={handleSaveEvent} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 6px 20px rgba(37,99,235,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <button onClick={handleSaveEvent} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
               <Save size={18} /> {editingEvent ? 'Save Changes' : 'Create Event'}
             </button>
           </div>
