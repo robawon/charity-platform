@@ -1,1 +1,16 @@
-{"version":2,"routes":[{"handle":"filesystem"},{"src":"/(.*)","dest":"/index.html"}]}
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/manifest.json",
+      "dest": "/api/manifest.json.js"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
