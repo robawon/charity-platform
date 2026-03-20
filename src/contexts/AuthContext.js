@@ -31,16 +31,31 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setLoading(false));
-      } else {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error || !session) {
+        supabase.auth.signOut();
+        setUser(null);
+        setProfile(null);
         setLoading(false);
+        return;
       }
+      setUser(session.user);
+      fetchProfile(session.user.id).finally(() => setLoading(false));
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+      if (event === 'TOKEN_REFRESHED') {
+        setUser(session.user);
+        await fetchProfile(session.user.id);
+        setLoading(false);
+        return;
+      }
       setUser(session?.user ?? null);
       if (session?.user) {
         await fetchProfile(session.user.id);
@@ -57,7 +72,6 @@ export const AuthProvider = ({ children }) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error(error.message);
 
-    // Check if seller is suspended
     if (data.user) {
       const { data: profileData } = await supabase
         .from('users')
@@ -82,7 +96,6 @@ export const AuthProvider = ({ children }) => {
     if (error) throw new Error(error.message);
     if (!data.user) throw new Error('Account created but email confirmation may be required.');
 
-    // New sellers are suspended by default
     const { error: profileError } = await supabase
       .from('users')
       .insert([{
@@ -90,7 +103,7 @@ export const AuthProvider = ({ children }) => {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         role: 'seller',
-        status: 'suspended', // Always suspended until admin activates
+        status: 'suspended',
       }]);
 
     if (profileError && !profileError.message.includes('duplicate')) {
