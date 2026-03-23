@@ -384,9 +384,13 @@ const BuyTicketPage = () => {
 
               {/* Footer */}
               <div style={{ padding: '14px 28px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Heart size={14} fill="#ef4444" color="#ef4444" />
-                  <span style={{ fontFamily: "'Fraunces', serif", color: '#0f2d5e', fontWeight: 700, fontSize: '0.9rem' }}>CharityLot</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <img src="/du-charity-logo.png" alt="DU Charity" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                  <div style={{ width: '1px', height: '24px', background: '#cbd5e1' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Heart size={14} fill="#ef4444" color="#ef4444" />
+                    <span style={{ fontFamily: "'Fraunces', serif", color: '#0f2d5e', fontWeight: 700, fontSize: '0.9rem' }}>CharityLot</span>
+                  </div>
                 </div>
                 <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>100% goes to charity</div>
               </div>
@@ -426,11 +430,15 @@ const BuyTicketPage = () => {
         /* FORM */
         <div style={{ maxWidth: '520px', margin: '0 auto', padding: '40px 1.5rem' }}>
           <div style={{ textAlign: 'center', marginBottom: '32px', animation: 'fadeUp 0.4s ease' }}>
-            <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', textDecoration: 'none', marginBottom: '24px' }}>
-              <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Heart size={18} color="white" fill="white" />
+            <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', textDecoration: 'none', marginBottom: '24px' }}>
+              <img src="/du-charity-logo.png" alt="DU Charity" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+              <div style={{ width: '1px', height: '36px', background: '#e2e8f0' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Heart size={18} color="white" fill="white" />
+                </div>
+                <span style={{ fontFamily: "'Fraunces', serif", fontSize: '1.2rem', fontWeight: 700, color: '#0f2d5e' }}>CharityLot</span>
               </div>
-              <span style={{ fontFamily: "'Fraunces', serif", fontSize: '1.2rem', fontWeight: 700, color: '#0f2d5e' }}>CharityLot</span>
             </Link>
 
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#fef3c7', color: '#d97706', padding: '8px 16px', borderRadius: '50px', fontSize: '0.8rem', fontWeight: 700, marginBottom: '16px' }}>
