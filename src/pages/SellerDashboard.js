@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { QRCodeSVG } from 'qrcode.react';
-import { Ticket, CheckCircle, XCircle, Clock, ArrowLeft, QrCode, Calendar, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Ticket, CheckCircle, XCircle, Clock, ArrowLeft, QrCode, Calendar, RefreshCw, Eye } from 'lucide-react';
 
 const SellerDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -247,6 +248,17 @@ const SellerDashboard = () => {
                               <XCircle size={14} /> Reject
                             </button>
                           </div>
+                        )}
+                        {sub.payment_status === 'approved' && (
+                          <Link to={`/ticket/${sub.id}`} style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                            padding: '9px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                            color: 'white', borderRadius: '7px', textDecoration: 'none',
+                            fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '0.8rem',
+                            boxShadow: '0 3px 10px rgba(37,99,235,0.3)',
+                          }}>
+                            <Eye size={14} /> View Ticket
+                          </Link>
                         )}
                       </div>
                     ))}

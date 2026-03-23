@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/AdminDashboard';
 import SellerDashboard from './pages/SellerDashboard';
 import BuyTicketPage from './pages/BuyTicketPage';
+import ViewTicketPage from './pages/ViewTicketPage';
 
 // Layout wrapper that includes Navbar
 const WithNavbar = ({ children }) => (
@@ -34,6 +35,7 @@ function App() {
           <Route path="/" element={<WithNavbar><HomePage /></WithNavbar>} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/buy/:eventId" element={<BuyTicketPage />} />
+          <Route path="/ticket/:submissionId" element={<ViewTicketPage />} />
 
           {/* Auth redirect */}
           <Route path="/dashboard" element={<AuthRedirect />} />
