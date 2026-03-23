@@ -17,6 +17,7 @@ const BuyTicketPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [submissionId, setSubmissionId] = useState(null);
   const [submissionStatus, setSubmissionStatus] = useState('pending');
+  const [ticketNumber, setTicketNumber] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -63,11 +64,12 @@ const BuyTicketPage = () => {
     const interval = setInterval(async () => {
       const { data } = await supabase
         .from('submissions')
-        .select('payment_status')
+        .select('payment_status, ticket_number')
         .eq('id', submissionId)
         .single();
       if (data?.payment_status) {
         setSubmissionStatus(data.payment_status);
+        if (data.ticket_number) setTicketNumber(data.ticket_number);
         if (data.payment_status === 'approved' || data.payment_status === 'rejected') {
           clearInterval(interval);
         }
@@ -96,8 +98,9 @@ const BuyTicketPage = () => {
         form_data: formData,
         payment_status: 'pending',
       }]).select().single();
-      if (subError) throw subError;
+      if (subError) throw new Error(subError.message);
       setSubmissionId(data.id);
+      setTicketNumber(data.ticket_number);
       setSubmitted(true);
     } catch (err) {
       setError('Failed to submit. Please try again.');
@@ -115,7 +118,7 @@ const BuyTicketPage = () => {
     transition: 'border-color 0.2s',
   });
 
-  const ticketId = submissionId ? submissionId.slice(0, 8).toUpperCase() : '';
+  const ticketId = ticketNumber ? String(ticketNumber).padStart(4, '0') : (submissionId ? submissionId.slice(0, 8).toUpperCase() : '');
 
   if (loading) {
     return (
