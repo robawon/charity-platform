@@ -103,30 +103,107 @@ const AdminDashboard = () => {
     fetchData();
   };
 
- const handlePickWinner = async (eventId) => {
-  // Check if winner already exists — if so, block re-picking
-  const existing = winners.find(w => w.event_id === eventId);
-  if (existing) {
-    alert('⚠️ A winner has already been selected for this event and cannot be changed.');
-    return;
-  }
+  const handlePickWinner = async (eventId) => {
+    const approved = submissions.filter(s => s.event_id === eventId && s.payment_status === 'approved');
+    if (approved.length === 0) { alert('No approved submissions for this event!'); return; }
+    const existing = winners.find(w => w.event_id === eventId);
+    if (existing && !window.confirm('A winner already exists. Pick a new one?')) return;
+    if (existing) await supabase.from('winners').delete().eq('event_id', eventId);
+    const winner = approved[Math.floor(Math.random() * approved.length)];
+    await supabase.from('winners').insert([{ event_id: eventId, submission_id: winner.id }]);
+    fetchData(); setActiveTab('winners');
+  };
 
-  // Check if there are approved submissions
-  const approved = submissions.filter(s => s.event_id === eventId && s.payment_status === 'approved');
-  if (approved.length === 0) {
-    alert('No approved submissions for this event!');
-    return;
-  }
+  const exportToPDF = (submissions) => {
+    const printWindow = window.open('', '_blank');
+    const eventName = selectedEvent !== 'all' ? events.find(e => e.id === selectedEvent)?.title : 'All Events';
+    const statusLabel = selectedStatus !== 'all' ? selectedStatus.toUpperCase() : 'All';
+    const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  // Confirm before picking
-  if (!window.confirm(`Pick a winner from ${approved.length} approved submission(s)? This cannot be undone.`)) return;
+    const rows = submissions.map((sub, i) => {
+      const phone = sub.form_data?.['Phone Number'] || sub.form_data?.['Phone'] || sub.form_data?.['phone'] || '—';
+      const message = sub.form_data?.['Message'] || sub.form_data?.['message'] || '';
+      const contactInfo = Object.entries(sub.form_data || {})
+        .map(([k, v]) => `<span style="margin-right:12px"><strong>${k}:</strong> ${v}</span>`)
+        .join('');
 
-  // Randomly select winner
-  const winner = approved[Math.floor(Math.random() * approved.length)];
-  await supabase.from('winners').insert([{ event_id: eventId, submission_id: winner.id }]);
-  fetchData();
-  setActiveTab('winners');
-};
+      return `
+        <tr style="border-bottom: 1px solid #e2e8f0; ${i % 2 === 0 ? 'background:#f8faff' : 'background:white'}">
+          <td style="padding:10px 12px; font-weight:700; color:#0f2d5e;">${i + 1}</td>
+          <td style="padding:10px 12px;">
+            <div style="font-weight:700; color:#1e293b">${sub.buyer_name}</div>
+            <div style="font-size:11px; color:#94a3b8; font-family:monospace">ID: ${sub.id.slice(0,8).toUpperCase()}</div>
+          </td>
+          <td style="padding:10px 12px; font-size:12px">${contactInfo || '—'}</td>
+          <td style="padding:10px 12px; font-size:12px; color:#475569">${sub.events?.title || '—'}</td>
+          <td style="padding:10px 12px; font-size:12px; color:#475569">${sub.users?.name || '—'}</td>
+          <td style="padding:10px 12px;">
+            <span style="padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700;
+              background:${sub.payment_status === 'approved' ? '#f0fdf4' : sub.payment_status === 'rejected' ? '#fef2f2' : '#fffbeb'};
+              color:${sub.payment_status === 'approved' ? '#15803d' : sub.payment_status === 'rejected' ? '#dc2626' : '#b45309'}">
+              ${sub.payment_status.toUpperCase()}
+            </span>
+          </td>
+          <td style="padding:10px 12px; font-size:12px; color:#64748b">${new Date(sub.created_at).toLocaleDateString()}</td>
+        </tr>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>CharityLot - Submissions Report</title>
+        <style>
+          body { font-family: 'Arial', sans-serif; margin: 0; padding: 20px; color: #1e293b; }
+          .header { background: linear-gradient(135deg, #0f2d5e, #2563eb); color: white; padding: 24px 28px; border-radius: 12px; margin-bottom: 24px; }
+          .header h1 { margin: 0 0 6px; font-size: 22px; }
+          .header p { margin: 0; opacity: 0.8; font-size: 13px; }
+          .meta { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+          .meta-item { background: #f8faff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 16px; }
+          .meta-item label { font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 3px; }
+          .meta-item span { font-size: 14px; font-weight: 700; color: #0f2d5e; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th { background: #0f2d5e; color: white; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+          .footer { margin-top: 24px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>❤️ CharityLot — Submissions Report</h1>
+          <p>Generated on ${date}</p>
+        </div>
+        <div class="meta">
+          <div class="meta-item"><label>Event</label><span>${eventName}</span></div>
+          <div class="meta-item"><label>Status Filter</label><span>${statusLabel}</span></div>
+          <div class="meta-item"><label>Total Records</label><span>${submissions.length}</span></div>
+          <div class="meta-item"><label>Approved</label><span>${submissions.filter(s => s.payment_status === 'approved').length}</span></div>
+          <div class="meta-item"><label>Pending</label><span>${submissions.filter(s => s.payment_status === 'pending').length}</span></div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Buyer Name & ID</th>
+              <th>Contact Info</th>
+              <th>Event</th>
+              <th>Seller</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="footer">
+          CharityLot Submissions Report · ${date} · Total: ${submissions.length} records
+        </div>
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const resetEventForm = () => setEventForm({
     title: '', description: '', ticket_price: '', deadline: '',
@@ -385,19 +462,14 @@ const AdminDashboard = () => {
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-  {approved > 0 && !hasWinner && (
-    <button onClick={() => handlePickWinner(event.id)} className="action-btn" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>
-      <Shuffle size={14} /> Pick Winner
-    </button>
-  )}
-  {hasWinner && (
-    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: '#fef9c3', color: '#b45309', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, border: '1px solid #fde68a' }}>
-      🏆 Winner Picked
-    </span>
-  )}
-  <button onClick={() => openEditEvent(event)} className="action-btn" style={{ padding: '8px 12px', background: '#f8faff', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#475569' }}><Edit2 size={15} /></button>
-  <button onClick={() => handleDeleteEvent(event.id)} className="action-btn" style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', cursor: 'pointer', color: '#dc2626' }}><Trash2 size={15} /></button>
-</div>
+                          {isPast && approved > 0 && (
+                            <button onClick={() => handlePickWinner(event.id)} className="action-btn" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>
+                              <Shuffle size={14} /> {hasWinner ? 'Re-pick' : 'Pick Winner'}
+                            </button>
+                          )}
+                          <button onClick={() => openEditEvent(event)} className="action-btn" style={{ padding: '8px 12px', background: '#f8faff', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#475569' }}><Edit2 size={15} /></button>
+                          <button onClick={() => handleDeleteEvent(event.id)} className="action-btn" style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', cursor: 'pointer', color: '#dc2626' }}><Trash2 size={15} /></button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -415,8 +487,23 @@ const AdminDashboard = () => {
           {/* SUBMISSIONS */}
           {activeTab === 'submissions' && (
             <div>
-              <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(1.5rem, 4vw, 2rem)', color: '#0f2d5e', marginBottom: '6px' }}>Submissions</h1>
-              <p style={{ color: '#64748b', marginBottom: '16px', fontSize: '0.9rem' }}>All buyer submissions across events.</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '6px' }}>
+                <div>
+                  <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(1.5rem, 4vw, 2rem)', color: '#0f2d5e', margin: 0 }}>Submissions</h1>
+                  <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>All buyer submissions — {filteredSubmissions.length} records</p>
+                </div>
+                <button
+                  onClick={() => exportToPDF(filteredSubmissions)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '10px 18px', background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
+                    color: 'white', border: 'none', borderRadius: '10px',
+                    fontFamily: "'DM Sans', sans-serif", fontWeight: 700,
+                    cursor: 'pointer', fontSize: '0.875rem', whiteSpace: 'nowrap',
+                  }}>
+                  📄 Export PDF
+                </button>
+              </div>
 
               <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
                 {[
@@ -430,22 +517,77 @@ const AdminDashboard = () => {
                 ))}
               </div>
 
-              {/* Mobile cards view */}
-              <div className="mobile-cards" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {filteredSubmissions.map(sub => (
-                  <div key={sub.id} style={{ background: 'white', borderRadius: '12px', padding: '14px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                      <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.9rem' }}>{sub.buyer_name}</div>
-                      {statusBadge(sub.payment_status)}
+              {/* Submissions cards */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {filteredSubmissions.map((sub, index) => (
+                  <div key={sub.id} style={{
+                    background: 'white', borderRadius: '14px', padding: '18px 20px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                    border: `1px solid ${sub.payment_status === 'approved' ? '#bbf7d0' : sub.payment_status === 'rejected' ? '#fecaca' : '#f1f5f9'}`,
+                  }}>
+                    {/* Header row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
+                          background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: 'white', fontWeight: 700, fontSize: '0.9rem',
+                        }}>
+                          {sub.buyer_name?.[0]?.toUpperCase() || '?'}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.95rem' }}>{sub.buyer_name}</div>
+                          <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>
+                            ID: <span style={{ fontFamily: 'monospace', color: '#64748b' }}>{sub.id.slice(0, 8).toUpperCase()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        {statusBadge(sub.payment_status)}
+                        <span style={{ background: '#f1f5f9', color: '#64748b', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>
+                          #{index + 1}
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                      <span style={{ color: '#64748b', fontSize: '0.78rem' }}>📋 {sub.events?.title || '—'}</span>
-                      <span style={{ color: '#64748b', fontSize: '0.78rem' }}>👤 {sub.users?.name || '—'}</span>
-                      <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>📅 {new Date(sub.created_at).toLocaleDateString()}</span>
+
+                    {/* Details grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginBottom: '12px' }}>
+                      <div style={{ background: '#f8faff', borderRadius: '8px', padding: '10px 12px' }}>
+                        <div style={{ color: '#94a3b8', fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '3px' }}>Event</div>
+                        <div style={{ color: '#1e293b', fontSize: '0.82rem', fontWeight: 600 }}>{sub.events?.title || '—'}</div>
+                      </div>
+                      <div style={{ background: '#f8faff', borderRadius: '8px', padding: '10px 12px' }}>
+                        <div style={{ color: '#94a3b8', fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '3px' }}>Seller</div>
+                        <div style={{ color: '#1e293b', fontSize: '0.82rem', fontWeight: 600 }}>{sub.users?.name || '—'}</div>
+                      </div>
+                      <div style={{ background: '#f8faff', borderRadius: '8px', padding: '10px 12px' }}>
+                        <div style={{ color: '#94a3b8', fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '3px' }}>Date</div>
+                        <div style={{ color: '#1e293b', fontSize: '0.82rem', fontWeight: 600 }}>{new Date(sub.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                      </div>
                     </div>
+
+                    {/* Contact info from form_data */}
+                    {sub.form_data && Object.keys(sub.form_data).length > 0 && (
+                      <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '10px 14px', border: '1px solid #dbeafe' }}>
+                        <div style={{ color: '#2563eb', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>📞 Contact Information</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '6px' }}>
+                          {Object.entries(sub.form_data).map(([key, val]) => val && (
+                            <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <span style={{ color: '#64748b', fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase' }}>{key}</span>
+                              <span style={{ color: '#1e293b', fontSize: '0.82rem', fontWeight: 600 }}>{val}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
-                {filteredSubmissions.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No submissions match your filters.</div>}
+                {filteredSubmissions.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '48px', color: '#94a3b8', background: 'white', borderRadius: '14px' }}>
+                    No submissions match your filters.
+                  </div>
+                )}
               </div>
             </div>
           )}
