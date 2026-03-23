@@ -217,7 +217,7 @@ const SellerDashboard = () => {
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {mySubmissions.map(sub => (
-                      <div key={sub.id} style={{ background: 'white', borderRadius: '12px', padding: '14px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: `1px solid ${sub.payment_status === 'approved' ? '#bbf7d0' : sub.payment_status === 'rejected' ? '#fecaca' : '#e2e8f0'}` }}>
+                      <div key={sub.id} style={{ background: 'white', borderRadius: '12px', padding: '14px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: `1px solid ${sub.payment_status === 'approved' ? '#bbf7d0' : sub.payment_status === 'rejected' ? '#fecaca' : '#e2e8f0'}`, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                           <div>
                             <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.9rem' }}>{sub.buyer_name}</div>
@@ -250,14 +250,20 @@ const SellerDashboard = () => {
                           </div>
                         )}
                         {sub.payment_status === 'approved' && (
-                          <Link to={`/ticket/${sub.id}`} style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                            padding: '9px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                            color: 'white', borderRadius: '7px', textDecoration: 'none',
-                            fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '0.8rem',
-                            boxShadow: '0 3px 10px rgba(37,99,235,0.3)',
-                          }}>
-                            <Eye size={14} /> View Ticket
+                          <Link
+                            to={`/ticket/${sub.id}`}
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                              padding: '12px 16px',
+                              background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                              color: 'white', borderRadius: '10px', textDecoration: 'none',
+                              fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '0.9rem',
+                              boxShadow: '0 4px 14px rgba(37,99,235,0.35)',
+                              width: '100%', boxSizing: 'border-box',
+                              marginTop: '4px',
+                            }}
+                          >
+                            <Eye size={16} /> View Ticket
                           </Link>
                         )}
                       </div>
