@@ -357,6 +357,31 @@ const BuyTicketPage = () => {
                 </div>
               )}
 
+              {/* CHAPA STAMP - shown on approved tickets */}
+              {submissionStatus === 'approved' && (
+                <div style={{
+                  padding: '16px 28px', display: 'flex', alignItems: 'center',
+                  justifyContent: 'space-between', background: 'white',
+                  borderTop: '1px solid #e2e8f0',
+                }}>
+                  <div style={{ color: '#94a3b8', fontSize: '0.7rem', maxWidth: '200px', lineHeight: 1.5 }}>
+                    This ticket is officially verified and approved by CharityLot
+                  </div>
+                  <div style={{ position: 'relative' }}>
+                    <img
+                      src="/chapa.png"
+                      alt="Official Stamp"
+                      style={{
+                        width: '90px', height: '90px',
+                        opacity: 0.85,
+                        transform: 'rotate(-12deg)',
+                        filter: 'drop-shadow(0 2px 4px rgba(37,99,235,0.2))',
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Footer */}
               <div style={{ padding: '14px 28px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

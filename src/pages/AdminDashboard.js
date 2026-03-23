@@ -67,6 +67,12 @@ const AdminDashboard = () => {
     fetchData();
   };
 
+  const handleRejectSubmission = async (submissionId) => {
+    if (!window.confirm('Reject this buyer submission? This cannot be undone.')) return;
+    await supabase.from('submissions').update({ payment_status: 'rejected' }).eq('id', submissionId);
+    fetchData();
+  };
+
   const handleSaveEvent = async () => {
     if (!eventForm.title || !eventForm.ticket_price || !eventForm.deadline) {
       alert('Please fill all required fields'); return;
@@ -569,7 +575,7 @@ const AdminDashboard = () => {
 
                     {/* Contact info from form_data */}
                     {sub.form_data && Object.keys(sub.form_data).length > 0 && (
-                      <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '10px 14px', border: '1px solid #dbeafe' }}>
+                      <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '10px 14px', border: '1px solid #dbeafe', marginBottom: '10px' }}>
                         <div style={{ color: '#2563eb', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>📞 Contact Information</div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '6px' }}>
                           {Object.entries(sub.form_data).map(([key, val]) => val && (
@@ -579,6 +585,24 @@ const AdminDashboard = () => {
                             </div>
                           ))}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Admin reject button for pending */}
+                    {sub.payment_status === 'pending' && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={() => handleRejectSubmission(sub.id)}
+                          className="action-btn"
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            padding: '8px 16px', background: '#fef2f2',
+                            color: '#dc2626', border: '1px solid #fecaca',
+                            borderRadius: '8px', cursor: 'pointer',
+                            fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '0.8rem',
+                          }}>
+                          <XCircle size={14} /> Reject Buyer
+                        </button>
                       </div>
                     )}
                   </div>
