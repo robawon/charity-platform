@@ -82,14 +82,15 @@ const ViewTicketPage = () => {
 
       {/* Back button */}
       <div style={{ maxWidth: '420px', margin: '0 auto 16px' }} className="no-print">
-        <Link to="/seller" style={{
+        <a href="/seller" style={{
           display: 'inline-flex', alignItems: 'center', gap: '6px',
           color: '#475569', textDecoration: 'none', fontWeight: 600, fontSize: '0.875rem',
           background: 'white', padding: '8px 14px', borderRadius: '8px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          WebkitTapHighlightColor: 'transparent',
         }}>
           <ArrowLeft size={16} /> Back to Dashboard
-        </Link>
+        </a>
       </div>
 
       <div className="ticket-card">
@@ -252,14 +253,15 @@ const ViewTicketPage = () => {
             🖨️ Print Ticket
           </button>
         )}
-        <Link to="/seller" style={{
+        <a href="/seller" style={{
           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           padding: '13px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
           color: 'white', textDecoration: 'none', borderRadius: '10px',
           fontWeight: 700, boxShadow: '0 4px 16px rgba(37,99,235,0.3)', fontSize: '0.9rem',
+          WebkitTapHighlightColor: 'transparent',
         }}>
           ← Back to Dashboard
-        </Link>
+        </a>
       </div>
     </div>
   );

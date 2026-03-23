@@ -62,6 +62,9 @@ const SellerDashboard = () => {
         .action-btn:hover { opacity: 0.85; }
         .action-btn { transition: opacity 0.2s; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        a { -webkit-tap-highlight-color: transparent; }
+        a:active { opacity: 0.8; }
+        button { -webkit-tap-highlight-color: transparent; }
       `}</style>
 
       {/* Header */}
@@ -250,21 +253,26 @@ const SellerDashboard = () => {
                           </div>
                         )}
                         {sub.payment_status === 'approved' && (
-                          <Link
-                            to={`/ticket/${sub.id}`}
+                          <a
+                            href={`/ticket/${sub.id}`}
                             style={{
                               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                              padding: '12px 16px',
+                              padding: '14px 16px',
                               background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
                               color: 'white', borderRadius: '10px', textDecoration: 'none',
-                              fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '0.9rem',
+                              fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '0.95rem',
                               boxShadow: '0 4px 14px rgba(37,99,235,0.35)',
                               width: '100%', boxSizing: 'border-box',
                               marginTop: '4px',
+                              WebkitTapHighlightColor: 'transparent',
+                              touchAction: 'manipulation',
+                              cursor: 'pointer',
+                              WebkitAppearance: 'none',
                             }}
                           >
-                            <Eye size={16} /> View Ticket
-                          </Link>
+                            <Eye size={16} style={{ flexShrink: 0 }} />
+                            <span>View Ticket</span>
+                          </a>
                         )}
                       </div>
                     ))}
