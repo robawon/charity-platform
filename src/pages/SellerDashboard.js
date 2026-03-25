@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { QRCodeSVG } from 'qrcode.react';
@@ -7,6 +8,7 @@ import { Ticket, CheckCircle, XCircle, Clock, ArrowLeft, QrCode, Calendar, Refre
 
 const SellerDashboard = () => {
   const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -253,13 +255,13 @@ const SellerDashboard = () => {
                           </div>
                         )}
                         {sub.payment_status === 'approved' && (
-                          <a
-                            href={`/ticket/${sub.id}`}
+                          <button
+                            onClick={() => navigate(`/ticket/${sub.id}`)}
                             style={{
                               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                               padding: '14px 16px',
                               background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                              color: 'white', borderRadius: '10px', textDecoration: 'none',
+                              color: 'white', borderRadius: '10px',
                               fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: '0.95rem',
                               boxShadow: '0 4px 14px rgba(37,99,235,0.35)',
                               width: '100%', boxSizing: 'border-box',
@@ -267,12 +269,12 @@ const SellerDashboard = () => {
                               WebkitTapHighlightColor: 'transparent',
                               touchAction: 'manipulation',
                               cursor: 'pointer',
-                              WebkitAppearance: 'none',
+                              border: 'none',
                             }}
                           >
                             <Eye size={16} style={{ flexShrink: 0 }} />
                             <span>View Ticket</span>
-                          </a>
+                          </button>
                         )}
                       </div>
                     ))}
