@@ -14,16 +14,36 @@ const ViewTicketPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Step 1: fetch submission
         const { data: sub, error: subError } = await supabase
           .from('submissions')
-          .select('*, events(*), users!seller_id(id, name, email)')
+          .select('*')
           .eq('id', submissionId)
           .single();
 
         if (subError || !sub) throw new Error('Ticket not found');
         setSubmission(sub);
-        setEvent(sub.events);
-        setSeller(sub.users);
+
+        // Step 2: fetch event
+        if (sub.event_id) {
+          const { data: eventData } = await supabase
+            .from('events')
+            .select('*')
+            .eq('id', sub.event_id)
+            .single();
+          setEvent(eventData);
+        }
+
+        // Step 3: fetch seller
+        if (sub.seller_id) {
+          const { data: sellerData } = await supabase
+            .from('users')
+            .select('id, name, email')
+            .eq('id', sub.seller_id)
+            .single();
+          setSeller(sellerData);
+        }
+
       } catch (err) {
         setError(err.message);
       } finally {
